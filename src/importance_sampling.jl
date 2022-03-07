@@ -51,15 +51,17 @@ function plot_estimates(n_mc_estimates, n_is_estimates, delta_n)
     # TODO(kykim): Do a cumsum type of optimization.
     x_mc = x_range(first(n_mc_estimates))
     n_y_mc = n_mean(n_mc_estimates, x_mc)
-    mean_y_mc, max_y_mc = mean.(n_y_mc), maximum.(n_y_mc)
+    min_y_mc, max_y_mc = minimum.(n_y_mc), maximum.(n_y_mc)
+    mid_y_mc = (max_y_mc + min_y_mc) ./ 2.0
 
     x_is = x_range(first(n_is_estimates))
     n_y_is = n_mean(n_is_estimates, x_is)
-    mean_y_is, max_y_is = mean.(n_y_is), maximum.(n_y_is)
+    min_y_is, max_y_is = minimum.(n_y_is), maximum.(n_y_is)
+    mid_y_is = (max_y_is + min_y_is) ./ 2.0
     
-    p = plot(x_mc, mean_y_mc, ribbon=(max_y_mc - mean_y_mc), fillalpha=0.15,
+    p = plot(x_mc, mid_y_mc, ribbon=(max_y_mc - mid_y_mc), fillalpha=0.15,
              label="MC", lw=2, xlabel="no. of samples", ylabel="estimates")
-    plot!(p, x_is, mean_y_is, ribbon=(max_y_is - mean_y_is), fillalpha=0.15, label="IS", lw=2)
+    plot!(p, x_is, mid_y_is, ribbon=(max_y_is - mid_y_is), fillalpha=0.15, label="IS", lw=2)
     # savefig("myplot.png")
     return p
 end
