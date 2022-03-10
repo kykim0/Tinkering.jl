@@ -3,6 +3,9 @@ uuid = "3247c565-7824-4251-9eae-9a632bfbe245"
 authors = ["Kyu-Young Kim <kykim@cs.stanford.edu> and contributors"]
 version = "0.1.0"
 
+[deps]
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+
 [compat]
 julia = "1.7.1"
 
