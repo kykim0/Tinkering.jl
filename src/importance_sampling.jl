@@ -36,7 +36,13 @@ function plot_fs(f_x, p_x, q_x, lb, ub)
 end
 
 
-function plot_estimates(n_estimates, delta_n, label)
+# Plots incremental sampling estimates with a confidence region.
+#
+# Args:
+# - n_estimates: a Vector of estimates of length n.
+# - delta_n: compute incremental estimates every this many steps.
+# - label: a String label to use for the plot.
+function plot_estimates(n_estimates::Vector, delta_n::Integer, label::String)
 
     function _x_range(l)
         total_n = length(l)
@@ -69,7 +75,26 @@ function plot_estimates(n_estimates, delta_n, label)
 end
 
 
-# Below are various experiment functions.
+# Computes importance weights.
+function is_weights(p_x, q_x_l, samples, weight_type="standard")
+    q_x_l = (isa(q_x_l, Vector) ? q_x_l : [q_x_l])
+    weights = nothing
+    if weight_type == "standard"
+        weights = pdf.(p_x, _samples) ./ pdf.(q_x_i, samples)
+    elseif weight_type == "mixture"
+        denom = .+([pdf.(q_x_i, samples) for q_x_i in q_x_l]...) / length(q_x_l)
+        weights = pdf.(p_x, samples) ./ denom
+    else
+        error("Unsupported weight type ", weight_type)
+    end
+    return weights
+end
+
+
+# Simple experiment comparing Gaussian nominal and propsal distributions.
+#
+# Importance sampling with the proposal used leads to slightly smaller variance
+# as it is better configured w.r.t to f * p.
 function simple_exp(mc_n, is_n, delta_n, n_trials)
     Random.seed!(0)
 
@@ -106,6 +131,12 @@ end
 
 
 # This is an example given in the chapter 6 importance sampling note.
+#
+# The exponential proposal distribution is so well-suited for the given f * p
+# that importance sampling done with the distribution leads to extremely small
+# variance.
+#
+# An alternate importance sampling with a "better" Gaussian also works well.
 function normal_exponential_exp(mc_n, is_n, delta_n, n_trials)
     Random.seed!(0)
 
@@ -151,7 +182,14 @@ function normal_exponential_exp(mc_n, is_n, delta_n, n_trials)
 end
 
 
-function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="standard")
+# Experiment to demonstrate a simple multiple importance sampling use case.
+#
+# The f and p in the experiment are such that when a Gaussian proposal with a
+# smaller variance is used for importance sampling, it can lead to a higher
+# variance in estimate than the Monte Carlo estimate. This experiment
+# demonstrates that using multiple importance sampling can be an option in such
+# cases.
+function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="mixture")
     Random.seed!(0)
 
     f_x = (x) -> (1. / (1. + exp(-(x - 4.5))))
@@ -159,8 +197,8 @@ function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="standard")
     q_x1 = Normal(3.0, 0.75)  # Compare σ=0.75 vs. σ=0.5
     q_x2 = Normal(2.25, 0.75)
     q_x3 = Normal(3.75, 0.75)
-    q_n = 3
-    is_n_i = is_n ÷ q_n  # Draw an equal no. of samples for each.
+    q_x_l = [q_x1, q_x2, q_x3]
+    is_n_i = is_n ÷ length(q_x_l)  # Draw an equal no. of samples for each.
 
     # Plot f, p, fp, q.
     figure(1, figsize=(6.4, 4.8))
@@ -173,19 +211,9 @@ function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="standard")
         push!(n_mc_estimates, mc_estimates)
 
         is_estimates = []
-        for q_x_i in [q_x1, q_x2, q_x3]
+        for q_x_i in q_x_l
             is_samples = rand(q_x_i, is_n_i)
-            weights = nothing
-            if weight_type == "standard"
-                weights = pdf.(p_x, is_samples) ./ pdf.(q_x_i, is_samples)
-            elseif weight_type == "mixture"
-                denom = (.+(pdf.(q_x1, is_samples),
-                            pdf.(q_x2, is_samples),
-                            pdf.(q_x3, is_samples)) / 3)
-                weights = pdf.(p_x, is_samples) ./ denom
-            else
-                error("Unsupported weight type ", weight_type)
-            end
+            weights = is_weights(p_x, q_x_l, is_samples, weight_type)
             append!(is_estimates, f_x.(is_samples) .* weights)
         end
         shuffle!(is_estimates)
@@ -201,6 +229,66 @@ function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="standard")
 end
 
 
+# Experiment to compare a single Gaussian proposal and multiple proposals.
+#
+# The nominal distribution is a multimodal distribution designed in such a way
+# that also leads to a multimodal f * p. Importance sampling with a single
+# Gaussian can work reasonably well when configured properly to cover the
+# regions of f * p, but the multimodal nature makes this somewhat tricky.
+# Instead, importance sampling done with multiple Gaussians makes it easier to
+# achieve the desired "coverage" and leads to lower variance.
+function exp_mixture_gaussian_mis(mc_n, is_n, delta_n, n_trials,
+                                  weight_type="mixture")
+    Random.seed!(0)
+
+    f_x = (x) -> (1. / (1. + exp(-(x - 1.5))))
+    p_x = MixtureModel(
+        Normal[Normal(-2.0, 1.0), Normal(1.0, 0.50), Normal(3.0, 0.5)],
+        [0.6, 0.25, 0.15])
+
+    # Compare a single Guassian proposal vs. multiple proposals.
+    q_x = Normal(0.0, 1.5)
+    q_x_mis1 = Normal(3.0, 0.75)
+    q_x_mis2 = Normal(1.0, 1.0)
+    q_x_mis3 = Normal(-1.0, 1.5)
+    q_x_misl = [q_x_mis1, q_x_mis2, q_x_mis3]
+    is_n_i = is_n ÷ length(q_x_misl)  # Draw an equal no. of samples for each.
+
+    # Plot f, p, fp, q.
+    figure(1, figsize=(6.4, 4.8))
+    plot_fs(f_x, p_x, [q_x, q_x_misl...], -6.0, 7.0)
+
+    # Compute n_trials many estimates.
+    n_mc_estimates, n_is_estimates, n_mis_estimates = [], [], []
+    for _ in 1:n_trials
+        mc_estimates = f_x.(rand(p_x, mc_n))
+        push!(n_mc_estimates, mc_estimates)
+
+        is_samples = rand(q_x, is_n)
+        pdf_p, pdf_q = pdf.(p_x, is_samples), pdf.(q_x, is_samples)
+        is_estimates = f_x.(is_samples) .* (pdf_p ./ pdf_q)
+        push!(n_is_estimates, is_estimates)
+
+        mis_estimates = []
+        for q_x_i in q_x_misl
+            mis_samples = rand(q_x_i, is_n_i)
+            weights = is_weights(p_x, q_x_misl, mis_samples, weight_type)
+            append!(mis_estimates, f_x.(mis_samples) .* weights)
+        end
+        shuffle!(mis_estimates)
+        push!(n_mis_estimates, mis_estimates)
+    end
+
+    # Plot MC and IS estimates w/ confidence regions.
+    figure(2, figsize=(6.4, 4.8))
+    plot_estimates(n_mc_estimates, delta_n, "MC")
+    plot_estimates(n_is_estimates, delta_n, "IS")
+    plot_estimates(n_mis_estimates, delta_n, "MIS")
+    xlabel("no. samples"); ylabel("estimates"); legend();
+    # savefig("myplot.png")
+end
+
+
 # simple_exp(10_000, 10_000, 100, 5)
 
 # normal_exponential_exp(10_000, 10_000, 100, 5)
@@ -208,4 +296,6 @@ end
 # Compare the "standard" and "mixture" weightings. Mixture weights does
 # noticeably better presumably because it is more robust against small q which
 # can significantly increase variance.
-exp_gaussian_mis(9000, 9000, 100, 5, "mixture")
+# exp_gaussian_mis(9000, 9000, 100, 5, "mixture")
+
+exp_mixture_gaussian_mis(9000, 9000, 100, 5, "mixture")
