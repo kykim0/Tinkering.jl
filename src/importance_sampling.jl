@@ -17,21 +17,21 @@ using Random
 # - q_x: a Function, a Distribution, or a Vector of the types.
 # - lb/ub: Floats.
 function plot_fs(f_x, p_x, q_x, lb, ub)
-    xl = [x for x in lb:0.1:ub]
+    xl = [x for x in lb:0.05:ub]
 
     pdf_p_xl = pdf.(p_x, xl)
-    plot(xl, pdf_p_xl, label="p")
+    plot(xl, pdf_p_xl, label="p", lw=0.5)
 
     q_x_l = (isa(q_x, Vector) ? q_x : [q_x])
     for (idx, q_x_i) in enumerate(q_x_l)
         pdf_q_xl = (isa(q_x_i, Function) ? q_x_i.(xl) : pdf.(q_x_i, xl))
         label = string("q", (idx == 1 ? "" : string(idx)))
-        plot(xl, pdf_q_xl, label=label)
+        plot(xl, pdf_q_xl, label=label, lw=0.5)
     end
 
     f_xl = f_x.(xl)
-    plot(xl, f_xl, label="f")
-    plot(xl, f_xl .* pdf_p_xl, label="f*p")
+    plot(xl, f_xl, label="f", lw=0.5)
+    plot(xl, f_xl .* pdf_p_xl, label="f*p", lw=0.5)
     legend();
 end
 
@@ -70,7 +70,7 @@ function plot_estimates(n_estimates::Vector, delta_n::Integer, label::String)
     #  plot(x_mc, mid_y_mc, ribbon=(max_y_mc - mid_y_mc), fillalpha=0.15,
     #       label="MC", lw=2, xlabel="no. of samples", ylabel="estimates")
     #  plot(x_is, mid_y_is, ribbon=(max_y_is - mid_y_is), fillalpha=0.15, label="IS", lw=2)
-    plot(xl, mid_y, label=label)
+    plot(xl, mid_y, label=label, lw=0.5)
     fill_between(xl, min_y, max_y, alpha=0.1)
 end
 
@@ -103,7 +103,7 @@ function simple_exp(mc_n, is_n, delta_n, n_trials)
     # Note. Using a smaller σ (e.g., 0.5) leads to higher variance as q now has
     # lighter tails than p. This case of using a Gaussian proposal when the
     # nominal is also Gaussian is discussed in Owen 9.1.
-    q_x = Normal(3.0, 0.75)  # Compare σ=0.75 vs. σ=0.5
+    q_x = Normal(3.0, 0.50)  # Compare σ=0.75 vs. σ=0.5
 
     # Plot f, p, fp, q.
     figure(1, figsize=(6.4, 4.8))
