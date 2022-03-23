@@ -151,5 +151,61 @@ function normal_exponential_exp(mc_n, is_n, delta_n, n_trials)
 end
 
 
-simple_exp(10_000, 10_000, 100, 5)
+function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="standard")
+    Random.seed!(0)
+
+    f_x = (x) -> (1. / (1. + exp(-(x - 4.5))))
+    p_x = Normal(2.0, 1.0)
+    q_x1 = Normal(3.0, 0.75)  # Compare σ=0.75 vs. σ=0.5
+    q_x2 = Normal(2.25, 0.75)
+    q_x3 = Normal(3.75, 0.75)
+    q_n = 3
+    is_n_i = is_n ÷ q_n  # Draw an equal no. of samples for each.
+
+    # Plot f, p, fp, q.
+    figure(1, figsize=(6.4, 4.8))
+    plot_fs(f_x, p_x, [q_x1, q_x2, q_x3], -3.0, 9.0)
+
+    # Compute n_trials many estimates.
+    n_mc_estimates, n_is_estimates = [], []
+    for _ in 1:n_trials
+        mc_estimates = f_x.(rand(p_x, mc_n))
+        push!(n_mc_estimates, mc_estimates)
+
+        is_estimates = []
+        for q_x_i in [q_x1, q_x2, q_x3]
+            is_samples = rand(q_x_i, is_n_i)
+            weights = nothing
+            if weight_type == "standard"
+                weights = pdf.(p_x, is_samples) ./ pdf.(q_x_i, is_samples)
+            elseif weight_type == "mixture"
+                denom = (.+(pdf.(q_x1, is_samples),
+                            pdf.(q_x2, is_samples),
+                            pdf.(q_x3, is_samples)) / 3)
+                weights = pdf.(p_x, is_samples) ./ denom
+            else
+                error("Unsupported weight type ", weight_type)
+            end
+            append!(is_estimates, f_x.(is_samples) .* weights)
+        end
+        shuffle!(is_estimates)
+        push!(n_is_estimates, is_estimates)
+    end
+
+    # Plot MC and IS estimates w/ confidence regions.
+    figure(2, figsize=(6.4, 4.8))
+    plot_estimates(n_mc_estimates, delta_n, "MC")
+    plot_estimates(n_is_estimates, delta_n, "IS")
+    xlabel("no. samples"); ylabel("estimates"); legend();
+    # savefig("myplot.png")
+end
+
+
+# simple_exp(10_000, 10_000, 100, 5)
+
 # normal_exponential_exp(10_000, 10_000, 100, 5)
+
+# Compare the "standard" and "mixture" weightings. Mixture weights does
+# noticeably better presumably because it is more robust against small q which
+# can significantly increase variance.
+exp_gaussian_mis(9000, 9000, 100, 5, "mixture")
