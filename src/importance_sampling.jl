@@ -1,4 +1,5 @@
-"""
+"""Importance sampling examples.
+
 TODOs:
 - Try other f's, distributions (see Distributions.jl).
 - Try a simple adaptive importance sampling algorithm.
@@ -106,7 +107,7 @@ function simple_exp(mc_n, is_n, delta_n, n_trials)
     q_x = Normal(3.0, 0.50)  # Compare σ=0.75 vs. σ=0.5
 
     # Plot f, p, fp, q.
-    figure(1, figsize=(6.4, 4.8))
+    figure(1, figsize=(9.0, 6.0))
     plot_fs(f_x, p_x, q_x, -3.0, 9.0)
 
     # Compute n_trials many estimates.
@@ -122,7 +123,7 @@ function simple_exp(mc_n, is_n, delta_n, n_trials)
     end
 
     # Plot MC and IS estimates w/ confidence regions.
-    figure(2, figsize=(6.4, 4.8))
+    figure(2, figsize=(9.0, 6.0))
     plot_estimates(n_mc_estimates, delta_n, "MC")
     plot_estimates(n_is_estimates, delta_n, "IS")
     xlabel("no. samples"); ylabel("estimates"); legend();
@@ -153,7 +154,7 @@ function normal_exponential_exp(mc_n, is_n, delta_n, n_trials)
     is_samples2 = rand(q_x2, is_n)
 
     # Plot f, p, fp, q.
-    figure(1, figsize=(6.4, 4.8))
+    figure(1, figsize=(9.0, 6.0))
     plot_fs(f_x, p_x, [pdf_q_fn, q_x2], -3.0, 9.0)
 
     # Compute n_trials many estimates.
@@ -172,7 +173,7 @@ function normal_exponential_exp(mc_n, is_n, delta_n, n_trials)
     end
 
     # Plot MC and IS estimates w/ confidence regions.
-    figure(2, figsize=(6.4, 4.8))
+    figure(2, figsize=(9.0, 6.0))
     plot_estimates(n_mc_estimates, delta_n, "MC")
     for (idx, n_is_estimates) in enumerate([n_is_estimates1, n_is_estimates2])
         label = string("IS", (idx == 1 ? "" : string(idx)))
@@ -201,7 +202,7 @@ function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="mixture")
     is_n_i = is_n ÷ length(q_x_l)  # Draw an equal no. of samples for each.
 
     # Plot f, p, fp, q.
-    figure(1, figsize=(6.4, 4.8))
+    figure(1, figsize=(9.0, 6.0))
     plot_fs(f_x, p_x, [q_x1, q_x2, q_x3], -3.0, 9.0)
 
     # Compute n_trials many estimates.
@@ -221,7 +222,7 @@ function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="mixture")
     end
 
     # Plot MC and IS estimates w/ confidence regions.
-    figure(2, figsize=(6.4, 4.8))
+    figure(2, figsize=(9.0, 6.0))
     plot_estimates(n_mc_estimates, delta_n, "MC")
     plot_estimates(n_is_estimates, delta_n, "IS")
     xlabel("no. samples"); ylabel("estimates"); legend();
@@ -255,7 +256,7 @@ function exp_mixture_gaussian_mis(mc_n, is_n, delta_n, n_trials,
     is_n_i = is_n ÷ length(q_x_misl)  # Draw an equal no. of samples for each.
 
     # Plot f, p, fp, q.
-    figure(1, figsize=(6.4, 4.8))
+    figure(1, figsize=(9.0, 6.0))
     plot_fs(f_x, p_x, [q_x, q_x_misl...], -6.0, 7.0)
 
     # Compute n_trials many estimates.
@@ -280,7 +281,7 @@ function exp_mixture_gaussian_mis(mc_n, is_n, delta_n, n_trials,
     end
 
     # Plot MC and IS estimates w/ confidence regions.
-    figure(2, figsize=(6.4, 4.8))
+    figure(2, figsize=(9.0, 6.0))
     plot_estimates(n_mc_estimates, delta_n, "MC")
     plot_estimates(n_is_estimates, delta_n, "IS")
     plot_estimates(n_mis_estimates, delta_n, "MIS")
