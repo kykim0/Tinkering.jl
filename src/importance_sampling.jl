@@ -76,18 +76,18 @@ function plot_estimates(n_estimates::Vector, delta_n::Integer, label::String)
 end
 
 
-# Computes importance weights.
-function is_weights(p_x, q_x_l, samples, weight_type="standard")
+# Computes standard weights.
+function is_standard_weights(p_x, q_x, samples)
+    weights = pdf.(p_x, samples) ./ pdf.(q_x, samples)
+    return weights
+end
+
+
+# Computes mixture weights based on all proposals.
+function is_mixture_weights(p_x, q_x_l, samples)
     q_x_l = (isa(q_x_l, Vector) ? q_x_l : [q_x_l])
-    weights = nothing
-    if weight_type == "standard"
-        weights = pdf.(p_x, _samples) ./ pdf.(q_x_i, samples)
-    elseif weight_type == "mixture"
-        denom = .+([pdf.(q_x_i, samples) for q_x_i in q_x_l]...) / length(q_x_l)
-        weights = pdf.(p_x, samples) ./ denom
-    else
-        error("Unsupported weight type ", weight_type)
-    end
+    denom = .+([pdf.(q_x_i, samples) for q_x_i in q_x_l]...) / length(q_x_l)
+    weights = pdf.(p_x, samples) ./ denom
     return weights
 end
 
@@ -214,7 +214,11 @@ function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="mixture")
         is_estimates = []
         for q_x_i in q_x_l
             is_samples = rand(q_x_i, is_n_i)
-            weights = is_weights(p_x, q_x_l, is_samples, weight_type)
+            if weight_type == "standard"
+                weights = is_standard_weights(p_x, q_x_i, is_samples)
+            elseif weight_type == "mixture"
+                weights = is_mixture_weights(p_x, q_x_l, is_samples)
+            end
             append!(is_estimates, f_x.(is_samples) .* weights)
         end
         shuffle!(is_estimates)
@@ -273,7 +277,11 @@ function exp_mixture_gaussian_mis(mc_n, is_n, delta_n, n_trials,
         mis_estimates = []
         for q_x_i in q_x_misl
             mis_samples = rand(q_x_i, is_n_i)
-            weights = is_weights(p_x, q_x_misl, mis_samples, weight_type)
+            if weight_type == "standard"
+                weights = is_standard_weights(p_x, q_x_i, mis_samples)
+            elseif weight_type == "mixture"
+                weights = is_mixture_weights(p_x, q_x_misl, mis_samples)
+            end
             append!(mis_estimates, f_x.(mis_samples) .* weights)
         end
         shuffle!(mis_estimates)
