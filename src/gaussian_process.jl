@@ -12,20 +12,9 @@ K(X, Xp, k) = [k(x, xp) for x in X, xp in Xp]
 
 
 # Mean functions.
-function mean_const(β)
-    return (x) -> β
-end
-
-
-function mean_lin(β)
-    return (x) -> dot(x, β)
-end
-
-
-function mean_zero()
-    return (x) -> 0.0
-end
-
+mean_const(β) = (x) -> β
+mean_lin(β) = (x) -> dot(x, β)
+mean_zero() = (x) -> 0.0
 
 # TODO(kykim): More mean functions.
 # - Periodic mean: m(x)=a cos(2πx/p)+b sin(2πx/p).
@@ -33,9 +22,10 @@ end
 
 
 # Covariance functions.
-function sq_exp(l)
-    return (x, xp) -> exp(-(x - xp)^2 / (2 * l^2))
-end
+cov_const(σ) = (x, xp) -> σ
+cov_exp(l) = (x, xp) -> exp(-(x - xp) / l)
+cov_gamma_exp(γ, l) = (x, xp) -> exp(-((x - xp) / l)^γ)
+cov_sq_exp(l) = (x, xp) -> exp(-(x - xp)^2 / (2 * l^2))
 
 
 mutable struct GaussianProcess
@@ -100,7 +90,7 @@ function simple_regression()
     x = 2π * rand(n)
     y = sin.(x) + 0.05 * rand(n)
 
-    gp = GaussianProcess(mean_zero(), sq_exp(1.0), x, y, 0.5)
+    gp = GaussianProcess(mean_zero(), cov_sq_exp(1.0), x, y, 1.0)
     true_y = (x) -> sin(x)
     figure(1, figsize=(9.0, 6.0))
     plot_gp(gp, -2.0, 8.0, true_y)
