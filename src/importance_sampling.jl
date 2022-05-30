@@ -17,23 +17,23 @@ using Random
 # - p_x: a Distribution.
 # - q_x: a Function, a Distribution, or a Vector of the types.
 # - lb/ub: Floats.
-function plot_fs(f_x, p_x, q_x, lb, ub)
+function plot_fs(f_x, p_x, q_x, lb, ub; lw=0.75)
     xl = [x for x in lb:0.05:ub]
 
     pdf_p_xl = pdf.(p_x, xl)
-    plt.plot(xl, pdf_p_xl, label="p", lw=0.5)
+    plt.plot(xl, pdf_p_xl, label=raw"$p$", lw=lw)
 
     q_x_l = (isa(q_x, Vector) ? q_x : [q_x])
     for (idx, q_x_i) in enumerate(q_x_l)
         pdf_q_xl = (isa(q_x_i, Function) ? q_x_i.(xl) : pdf.(q_x_i, xl))
-        label = string("q", (idx == 1 ? "" : string(idx)))
-        plt.plot(xl, pdf_q_xl, label=label, lw=0.5)
+        label = string(raw"$q$", (idx == 1 ? "" : string(idx)))
+        plt.plot(xl, pdf_q_xl, label=label, lw=lw)
     end
 
     f_xl = f_x.(xl)
-    plt.plot(xl, f_xl, label="f", lw=0.5)
-    plt.plot(xl, f_xl .* pdf_p_xl, label="f*p", lw=0.5)
-    legend();
+    plt.plot(xl, f_xl, label=raw"$f$", lw=lw)
+    plt.plot(xl, f_xl .* pdf_p_xl, label=raw"$f \times p$", lw=lw)
+    plt.legend();
 end
 
 
@@ -72,7 +72,7 @@ function plot_estimates(n_estimates::Vector, delta_n::Integer, label::String)
     #       label="MC", lw=2, xlabel="no. of samples", ylabel="estimates")
     #  plot(x_is, mid_y_is, ribbon=(max_y_is - mid_y_is), fillalpha=0.15, label="IS", lw=2)
     plt.plot(xl, mid_y, label=label, lw=0.5)
-    fill_between(xl, min_y, max_y, alpha=0.1)
+    plt.fill_between(xl, min_y, max_y, alpha=0.1)
 end
 
 
@@ -104,11 +104,13 @@ function simple_exp(mc_n, is_n, delta_n, n_trials)
     # Note. Using a smaller σ (e.g., 0.5) leads to higher variance as q now has
     # lighter tails than p. This case of using a Gaussian proposal when the
     # nominal is also Gaussian is discussed in Owen 9.1.
-    q_x = Normal(3.0, 0.50)  # Compare σ=0.75 vs. σ=0.5
+    q_x = Normal(3.0, 0.50)  # Compare σ=1.0 vs. σ=0.5
 
     # Plot f, p, fp, q.
-    figure(1, figsize=(9.0, 6.0))
+    figure(figsize=(9.0, 6.0))
     plot_fs(f_x, p_x, q_x, -3.0, 9.0)
+    plt.tight_layout()
+    # plt.savefig("distribs.png", dpi=500)
 
     # Compute n_trials many estimates.
     n_mc_estimates, n_is_estimates = [], []
@@ -123,11 +125,12 @@ function simple_exp(mc_n, is_n, delta_n, n_trials)
     end
 
     # Plot MC and IS estimates w/ confidence regions.
-    figure(2, figsize=(9.0, 6.0))
+    figure(figsize=(9.0, 6.0))
     plot_estimates(n_mc_estimates, delta_n, "MC")
     plot_estimates(n_is_estimates, delta_n, "IS")
-    xlabel("no. samples"); ylabel("estimates"); legend();
-    # savefig("myplot.png")
+    plt.xlabel("samples"); plt.ylabel("estimates"); plt.legend();
+    plt.tight_layout()
+    # plt.savefig("estimates.png", dpi=500)
 end
 
 
@@ -154,7 +157,7 @@ function normal_exponential_exp(mc_n, is_n, delta_n, n_trials)
     is_samples2 = rand(q_x2, is_n)
 
     # Plot f, p, fp, q.
-    figure(1, figsize=(9.0, 6.0))
+    plt.figure(figsize=(9.0, 6.0))
     plot_fs(f_x, p_x, [pdf_q_fn, q_x2], -3.0, 9.0)
 
     # Compute n_trials many estimates.
@@ -173,13 +176,13 @@ function normal_exponential_exp(mc_n, is_n, delta_n, n_trials)
     end
 
     # Plot MC and IS estimates w/ confidence regions.
-    figure(2, figsize=(9.0, 6.0))
+    plt.figure(figsize=(9.0, 6.0))
     plot_estimates(n_mc_estimates, delta_n, "MC")
     for (idx, n_is_estimates) in enumerate([n_is_estimates1, n_is_estimates2])
         label = string("IS", (idx == 1 ? "" : string(idx)))
         plot_estimates(n_is_estimates, delta_n, label)
     end
-    xlabel("no. samples"); ylabel("estimates"); legend();
+    plt.xlabel("samples"); plt.ylabel("estimates"); plt.legend();
 end
 
 
@@ -202,7 +205,7 @@ function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="mixture")
     is_n_i = is_n ÷ length(q_x_l)  # Draw an equal no. of samples for each.
 
     # Plot f, p, fp, q.
-    figure(1, figsize=(9.0, 6.0))
+    plt.figure(figsize=(9.0, 6.0))
     plot_fs(f_x, p_x, [q_x1, q_x2, q_x3], -3.0, 9.0)
 
     # Compute n_trials many estimates.
@@ -226,11 +229,12 @@ function exp_gaussian_mis(mc_n, is_n, delta_n, n_trials, weight_type="mixture")
     end
 
     # Plot MC and IS estimates w/ confidence regions.
-    figure(2, figsize=(9.0, 6.0))
+    plt.figure(figsize=(9.0, 6.0))
     plot_estimates(n_mc_estimates, delta_n, "MC")
     plot_estimates(n_is_estimates, delta_n, "IS")
-    xlabel("no. samples"); ylabel("estimates"); legend();
-    # savefig("myplot.png")
+    plt.xlabel("samples"); plt.ylabel("estimates"); plt.legend();
+    plt.tight_layout()
+    # plt.savefig("myplot.png", dpi=500)
 end
 
 
@@ -260,7 +264,7 @@ function exp_mixture_gaussian_mis(mc_n, is_n, delta_n, n_trials,
     is_n_i = is_n ÷ length(q_x_misl)  # Draw an equal no. of samples for each.
 
     # Plot f, p, fp, q.
-    figure(1, figsize=(9.0, 6.0))
+    plt.figure(figsize=(9.0, 6.0))
     plot_fs(f_x, p_x, [q_x, q_x_misl...], -6.0, 7.0)
 
     # Compute n_trials many estimates.
@@ -289,16 +293,17 @@ function exp_mixture_gaussian_mis(mc_n, is_n, delta_n, n_trials,
     end
 
     # Plot MC and IS estimates w/ confidence regions.
-    figure(2, figsize=(9.0, 6.0))
+    plt.figure(figsize=(9.0, 6.0))
     plot_estimates(n_mc_estimates, delta_n, "MC")
     plot_estimates(n_is_estimates, delta_n, "IS")
     plot_estimates(n_mis_estimates, delta_n, "MIS")
-    xlabel("no. samples"); ylabel("estimates"); legend();
-    # savefig("myplot.png")
+    plt.xlabel("no. samples"); plt.ylabel("estimates"); plt.legend();
+    plt.tight_layout()
+    # plt.savefig("myplot.png", dpi=500)
 end
 
 
-# simple_exp(10_000, 10_000, 100, 5)
+simple_exp(10_000, 10_000, 100, 5)
 
 # normal_exponential_exp(10_000, 10_000, 100, 5)
 
@@ -307,4 +312,4 @@ end
 # can significantly increase variance.
 # exp_gaussian_mis(9000, 9000, 100, 5, "mixture")
 
-exp_mixture_gaussian_mis(9000, 9000, 100, 5, "mixture")
+# exp_mixture_gaussian_mis(9000, 9000, 100, 5, "mixture")
