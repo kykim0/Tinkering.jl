@@ -266,6 +266,8 @@ function exp_mixture_gaussian_mis(mc_n, is_n, delta_n, n_trials,
     # Plot f, p, fp, q.
     plt.figure(figsize=(9.0, 6.0))
     plot_fs(f_x, p_x, [q_x, q_x_misl...], -6.0, 7.0)
+    plt.tight_layout()
+    # plt.savefig("mis_graphs.png", dpi=500)
 
     # Compute n_trials many estimates.
     n_mc_estimates, n_is_estimates, n_mis_estimates = [], [], []
@@ -297,13 +299,13 @@ function exp_mixture_gaussian_mis(mc_n, is_n, delta_n, n_trials,
     plot_estimates(n_mc_estimates, delta_n, "MC")
     plot_estimates(n_is_estimates, delta_n, "IS")
     plot_estimates(n_mis_estimates, delta_n, "MIS")
-    plt.xlabel("no. samples"); plt.ylabel("estimates"); plt.legend();
+    plt.xlabel("samples"); plt.ylabel("estimates"); plt.legend();
     plt.tight_layout()
-    # plt.savefig("myplot.png", dpi=500)
+    # plt.savefig("mis.png", dpi=500)
 end
 
 
-simple_exp(10_000, 10_000, 100, 5)
+# simple_exp(10_000, 10_000, 100, 5)
 
 # normal_exponential_exp(10_000, 10_000, 100, 5)
 
@@ -312,4 +314,4 @@ simple_exp(10_000, 10_000, 100, 5)
 # can significantly increase variance.
 # exp_gaussian_mis(9000, 9000, 100, 5, "mixture")
 
-# exp_mixture_gaussian_mis(9000, 9000, 100, 5, "mixture")
+exp_mixture_gaussian_mis(9000, 9000, 100, 5, "mixture")
