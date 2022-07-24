@@ -42,7 +42,7 @@ function plot_p_sigmoid(; bounds, alpha, filename=nothing)
 
     alpha_quantile = quantile(chisq_dist, 1.0 - alpha)
     ys = collect(0.0:0.05:1.2)
-    plt.plot(fill(alpha_quantile, length(ys)), ys, label="α-quantile", linestyle="--")
+    plt.plot(fill(alpha_quantile, length(ys)), ys, label=raw"$\alpha$-quantile", linestyle="--")
 
     sigmoid_lw = 0.7
     sigmoid_1_0 = _sigmoid(alpha_quantile, 1.0)
@@ -230,8 +230,8 @@ function exp_mixture_p(; n_trials, n_samples, alphas, plot_delta_n)
     plt.plot(xs, pdf.(p_x, xs), label="cost", lw=0.7)
     # plt.plot(xs, is_sigmoid_fn.(xs), label="sigmoid", lw=0.7)
     ys = collect(0.0:0.05:0.50)
-    plt.plot(fill(alpha_quantile, length(ys)), ys, label="α-quantile", linestyle="--")
-    plt.xlabel("cost"); plt.ylabel("density"); plt.legend();
+    plt.plot(fill(alpha_quantile, length(ys)), ys, label=raw"$\alpha$-quantile", linestyle="--")
+    plt.xlabel("Cost"); plt.ylabel("Density"); plt.legend();
     plt.tight_layout()
     # plt.savefig(_output_filename("graphs.png"), dpi=500)
 

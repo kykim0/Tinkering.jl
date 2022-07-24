@@ -47,7 +47,7 @@ function plot_estimates(n_estimates::Vector, delta_n::Integer, label::String)
 
     function _x_range(l)
         total_n = length(l)
-        ret = delta_n:delta_n:total_n
+        ret = collect(delta_n:delta_n:total_n)
         if (last(ret) != total_n); push!(ret, total_n); end
         return ret
     end
@@ -298,10 +298,10 @@ function exp_mixture_gaussian_mis(mc_n, is_n, delta_n, n_trials,
     plt.figure(figsize=(9.0, 6.0))
     plot_estimates(n_mc_estimates, delta_n, "MC")
     plot_estimates(n_is_estimates, delta_n, "IS")
-    plot_estimates(n_mis_estimates, delta_n, "MIS")
-    plt.xlabel("samples"); plt.ylabel("estimates"); plt.legend();
+    plot_estimates(n_mis_estimates, delta_n, "MIS-$(weight_type)")
+    plt.xlabel("Samples"); plt.ylabel("Estimates"); plt.legend();
     plt.tight_layout()
-    # plt.savefig("mis.png", dpi=500)
+    plt.savefig("mis.png", dpi=500)
 end
 
 
@@ -314,4 +314,8 @@ end
 # can significantly increase variance.
 # exp_gaussian_mis(9000, 9000, 100, 5, "mixture")
 
-exp_mixture_gaussian_mis(9000, 9000, 100, 5, "mixture")
+PyPlot.matplotlib[:rc]("font", family="serif")
+PyPlot.matplotlib[:rc]("text", usetex=true)
+PyPlot.matplotlib[:rc]("pgf", rcfonts=false)
+
+exp_mixture_gaussian_mis(5000, 5000, 20, 5, "mixture")
