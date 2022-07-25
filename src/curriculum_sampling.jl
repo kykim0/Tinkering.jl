@@ -8,6 +8,7 @@ TODOs:
 """
 
 using Distributions
+using FileIO
 using PyPlot
 using Random
 using Statistics
@@ -197,7 +198,7 @@ function _sigmoid_sample_mu_s(p_x, n_samples, mu, s, alphas; mix_weights=false)
                 evar = StatsBase.var(xs, FrequencyWeights(ones(length(xs))); corrected=true)
                 p = 0.95
                 # Slope for which Pr(x_p) = p: s = -(x_p - \mu) / ln((1 - p) / p).
-                alpha_s = max(-sqrt(evar) / log((1 - p) / p), 1.0)
+                alpha_s = max(-sqrt(evar) / log((1 - p) / p), 2.0)
                 push!(estds[alpha], sqrt(evar))
             end
         end
@@ -260,7 +261,8 @@ function exp_mixture_p(; n_trials, n_samples, alphas, plot_delta_n)
     plt.figure(figsize=(9.0, 6.0))
     plot_estimates(n_mc_estimates, xl, "MC")
     plot_estimates(n_is_estimates, xl, "IS")
-    plt.plot(1:n_samples, fill(alpha_quantile, n_samples), label="α-quantile", linestyle="--")
+    plt.plot(1:n_samples, fill(alpha_quantile, n_samples),
+             label=raw"$\alpha$-quantile", linestyle="--")
     plt.xlabel("samples"); plt.ylabel("estimates"); plt.legend();
     plt.tight_layout()
     # plt.savefig(_output_filename("convergence-$(mu)-$(s).png"), dpi=500)
@@ -288,9 +290,9 @@ function _mixture_distrib(; plot_graphs=true, alpha)
         plt.bar(xs, ps, width=0.4, label="cost", alpha=0.7)
         # plt.plot(xs, is_sigmoid_fn.(xs), label="sigmoid", lw=0.7)
         plot_ys = collect(0.0:0.005:0.03)
-        plt.plot(fill(alpha_quantile, length(plot_ys)), plot_ys, label="α-quantile",
+        plt.plot(fill(alpha_quantile, length(plot_ys)), plot_ys, label=raw"$\alpha$-quantile",
                  linestyle="--", color="orange")
-        plt.xlabel("cost"); plt.ylabel("p"); plt.legend();
+        plt.xlabel("cost"); plt.ylabel(raw"$p$"); plt.legend();
         plt.tight_layout()
         # plt.savefig(_output_filename("graphs-$(mu)-$(s).png"), dpi=500)
     end
@@ -300,7 +302,8 @@ end
 
 
 function exp_discrete_mixture_p(; n_trials, n_samples, alphas, mu, s,
-                                plot_delta_n, plot_graphs=true)
+                                plot_delta_n, plot_graphs=true,
+                                save_output=false)
     # Create a discrete version of the mixture density.
     p_x, alpha_quantile = _mixture_distrib(plot_graphs=plot_graphs, alpha=alphas[end])
 
@@ -308,7 +311,7 @@ function exp_discrete_mixture_p(; n_trials, n_samples, alphas, mu, s,
 
     estds = Dict()
     n_mc_samples = []; n_fixed_is_samples = []; n_mu_is_samples = []; n_mu_s_is_samples = []
-    for _ in 1:n_trials
+    for trial in 1:n_trials
         mc_samples = rand(p_x, n_samples)
         push!(n_mc_samples, mc_samples)
 
@@ -320,6 +323,21 @@ function exp_discrete_mixture_p(; n_trials, n_samples, alphas, mu, s,
 
         mu_s_is_samples, estds = _sigmoid_sample_mu_s(p_x, n_samples, mu, s, alphas)
         push!(n_mu_s_is_samples, mu_s_is_samples)
+
+        if save_output
+            # save(_output_filename("mc_$(n_samples)_$(trial).jld2"),
+            #      Dict("samples" => mc_samples))
+            # save(_output_filename("fixed_is_$(mu)_$(s)_$(n_samples)_$(trial).jld2"),
+            #      Dict("samples" => first.(fixed_is_samples),
+            #           "weights" => last.(fixed_is_samples)))
+            # save(_output_filename("mu_is_$(mu)_$(s)_$(n_samples)_$(trial).jld2"),
+            #      Dict("samples" => first.(mu_is_samples),
+            #           "weights" => last.(mu_is_samples)))
+            # save(_output_filename("mu_s_is_$(mu)_$(s)_$(n_samples)_$(trial).jld2"),
+            #      Dict("samples" => first.(mu_s_is_samples),
+            #           "weights" => last.(mu_s_is_samples)))
+            continue
+        end
     end
 
     # plt.figure(figsize=(9.0, 6.0))
@@ -361,7 +379,7 @@ function exp_discrete_mixture_p(; n_trials, n_samples, alphas, mu, s,
         mc_med, mc_rng = _range(n_mc_estimates[idx])
         print("  MC: $(mc_med)±$(mc_rng)")
 
-        if !isempty(n_fixed_is_samples)
+        if !isempty(n_fixed_is_estimates)
             fixed_is_med, fixed_is_rng = _range(n_fixed_is_estimates[idx])
             print("  IS-fixed: $(fixed_is_med)±$(fixed_is_rng)")
         end
@@ -385,7 +403,8 @@ function exp_discrete_mixture_p(; n_trials, n_samples, alphas, mu, s,
     plot_estimates(n_fixed_is_estimates, xl, "IS-fixed")
     plot_estimates(n_mu_is_estimates, xl, "IS-mu")
     plot_estimates(n_mu_s_is_estimates, xl, "IS-mu-s")
-    plt.plot(1:n_samples, fill(alpha_quantile, n_samples), label="α-quantile", linestyle="--", lw=0.5)
+    plt.plot(1:n_samples, fill(alpha_quantile, n_samples),
+             label=raw"$\alpha$-quantile", linestyle="--", lw=0.5)
     # plt.ylim([10.0, 25.0])
     # plt.ylim(12.5)
     plt.xlabel("no. of samples"); plt.ylabel("estimate"); plt.legend(loc=7);
@@ -394,11 +413,15 @@ function exp_discrete_mixture_p(; n_trials, n_samples, alphas, mu, s,
 end
 
 
+PyPlot.matplotlib[:rc]("font", family="serif")
+PyPlot.matplotlib[:rc]("text", usetex=true)
+PyPlot.matplotlib[:rc]("pgf", rcfonts=false)
+
 # plot_p_sigmoid(bounds=(0.0, 15.0), alpha=0.05, filename="sigmoid.png")
 
 # exp_mixture_p(; n_trials=3, n_samples=1_000_000, alphas=[0.1], plot_delta_n=10_000)
 # exp_mixture_p(; n_trials=3, n_samples=100_000, alphas=[0.1], plot_delta_n=1_000)
 
 # _mixture_distrib(; plot_graphs=true, alpha=0.05);
-exp_discrete_mixture_p(; n_trials=10, n_samples=500, alphas=fill(0.01, 250),
-                       mu=10.0, s=4.0, plot_delta_n=2, plot_graphs=false)
+exp_discrete_mixture_p(; n_trials=10, n_samples=500, alphas=fill(0.01, 50),
+                       mu=10.0, s=4.0, plot_delta_n=2, plot_graphs=false, save_output=true)
